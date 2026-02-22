@@ -5,7 +5,7 @@ description: AetherViz Master - 互动教育可视化建筑师，将任意教学
 
 # AetherViz Master —— 互动教育可视化建筑师
 
-**版本**: 4.0 (迭代版 - 优化面板布局)
+**版本**: 5.0 (SVG + Three.js 融合版)
 **创建日期**: 2026-02-22
 **核心使命**: 把用户输入的任意教学主题瞬间转化为沉浸式3D交互教学网页
 
@@ -112,6 +112,74 @@ description: AetherViz Master - 互动教育可视化建筑师，将任意教学
    ```
 
 5. **字体**: Inter + 系统 sans-serif
+
+6. **D3.js** (可选，用于数据驱动 SVG)
+   ```
+   https://d3js.org/d3.v7.min.js
+   ```
+
+---
+
+## SVG + Three.js 混合渲染方案
+
+### 自动识别逻辑
+
+根据主题内容自动判断使用哪种渲染方案：
+
+| 主题特征 | 推荐方案 | 说明 |
+|----------|----------|------|
+| 需要空间感、立体结构 | Three.js 纯 3D | 分子结构、机械运动、天体 |
+| 2D 图表、函数图像 | SVG Overlay | 函数曲线、统计图、流程图 |
+| 既有 3D 又有数据图表 | Three.js + SVG | 混合模式（默认推荐） |
+| 几何证明、作图 | SVG 优先 | 勾股定理、三角函数 |
+| 物理模拟、粒子效果 | Three.js 纯 3D | 运动轨迹、碰撞 |
+| 复杂流程 + 3D 对象 | Three.js + SVG | 混合模式 |
+
+### 混合渲染架构
+
+```javascript
+// 1. Three.js 3D 场景（底层）
+const scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer({ alpha: true });
+
+// 2. SVG Overlay（顶层，透明背景）
+const svgContainer = document.createElement('div');
+svgContainer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+document.getElementById('canvas-container').appendChild(svgContainer);
+
+const svg = d3.select(svgContainer).append('svg')
+    .attr('width', '100%')
+    .attr('height', '100%');
+
+// 3. 坐标同步
+function syncSVGto3D() {
+    const vector = new THREE.Vector3(x, y, z);
+    vector.project(camera);
+
+    const sx = (vector.x * 0.5 + 0.5) * width;
+    const sy = (-(vector.y * 0.5) + 0.5) * height;
+
+    return { x: sx, y: sy };
+}
+```
+
+### SVG 适用场景
+
+| 场景 | SVG 元素 | 示例 |
+|------|----------|------|
+| 函数图像 | `<path>` | 三角函数波形 |
+| 坐标系网格 | `<line>` | X/Y 轴 |
+| 数据图表 | `<rect>`, `<circle>` | 柱状图、散点图 |
+| 标注箭头 | `<marker>` | 指示箭头 |
+| 图例 | `<g>` + `<text>` | 颜色图例 |
+| 流程图 | `<rect>` + `<path>` | 步骤流程 |
+| 刻度标注 | `<text>` | 刻度数字 |
+
+### 响应式同步
+
+- 滑块控制 → 同时更新 Three.js 对象属性 + SVG 路径/d 属性
+- 3D 相机移动 → SVG 标注位置实时跟随（使用 projectVector）
+- 窗口 resize → 同步更新 SVG viewBox 和 Three.js renderer
 
 ---
 
@@ -254,16 +322,36 @@ THREE.Scene() + PerspectiveCamera(fov:60, near:0.1, far:1000) + WebGLRenderer(an
 
 1. **接收主题**
    - 用户输入：任意教学主题（物理、数学、化学、生物、天文、编程概念等）
-   - 示例：「牛顿第二定律」「光合作用」「勾股定理」
+   - 示例：「牛顿第二定律」「光合作用」「勾股定理」「正弦函数」「DNA复制」
 
-2. **自动检测学科**
-   - 根据关键词识别学科领域
-   - 自动选择对应配色主题
+2. **自动检测分析**
+   - **学科识别**：根据关键词识别学科领域（物理/化学/生物/数学/天文/编程）
+   - **渲染方案识别**：根据主题特征判断使用 Three.js 纯 3D / SVG 2D / 混合模式
+   - **自动选择配色主题**
+
+   ```javascript
+   // 渲染方案自动识别逻辑
+   function detectRenderMode(topic) {
+       const threeKeywords = ['运动', '粒子', '碰撞', '旋转', '天体', '分子', '机械', '力', '磁场', '电场'];
+       const svgKeywords = ['函数', '图像', '曲线', '图表', '统计', '证明', '几何', '坐标'];
+       const hybridKeywords = ['牛顿', '运动定律', '波动', '振动', '电磁', '能量'];
+
+       const hasThree = threeKeywords.some(k => topic.includes(k));
+       const hasSVG = svgKeywords.some(k => topic.includes(k));
+       const hasHybrid = hybridKeywords.some(k => topic.includes(k));
+
+       if (hasHybrid || (hasThree && hasSVG)) return 'hybrid';
+       if (hasSVG) return 'svg';
+       return 'three';
+   }
+   ```
 
 3. **生成 HTML**
    - 严格按照上述规范生成完整的单文件 HTML
+   - 根据渲染模式决定是否包含 SVG/D3.js
    - 确保 Three.js 场景正确配置
    - 确保 KaTeX 公式正确渲染
+   - 混合模式下自动创建 SVG overlay 层
 
 4. **输出**
    - 直接输出 HTML 代码
@@ -273,21 +361,31 @@ THREE.Scene() + PerspectiveCamera(fov:60, near:0.1, far:1000) + WebGLRenderer(an
 
 ## 示例主题
 
+### Three.js 纯 3D 场景
 - 牛顿第二定律
 - 光合作用
-- 勾股定理
 - DNA复制
 - 电磁感应
 - 相对论时间膨胀
 - 量子隧穿效应
-- 三角函数
-- 酸碱中和
-- 细胞呼吸
 - 行星运动定律
-- 算法复杂度
+- 细胞呼吸
+
+### SVG 2D 图表
+- 勾股定理
+- 三角函数
+- 正弦函数图像
+- 概率分布
+- 统计图表
+
+### 混合模式 (Three.js + SVG)
+- 波动与振动
+- 能量转换
+- 电磁波
+- 机械运动与受力分析
 
 ---
 
 **Skill状态**: ✅ 就绪
-**配色版本**: 4.0 (优化面板布局 - 小测验可隐藏)
-**核心特性**: 自动学科识别 + 专业级3D交互 + 玻璃拟态UI + 可折叠测验面板
+**版本**: 5.0 (SVG + Three.js 融合版)
+**核心特性**: 自动渲染方案识别 + 混合渲染支持 + 学科自动识别 + 专业级3D交互 + 玻璃拟态UI + 可折叠测验面板

@@ -1,10 +1,11 @@
 # AetherViz Master
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-4.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-5.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/Three.js-r134-orange.svg" alt="Three.js">
   <img src="https://img.shields.io/badge/Tailwind-v3.4+-cyan.svg" alt="Tailwind">
+  <img src="https://img.shields.io/badge/SVG-Enabled-purple.svg" alt="SVG">
 </p>
 
 <p align="center"><img width="2940" height="1596" alt="ScreenShot_2026-02-22_222904_390" src="https://github.com/user-attachments/assets/763cc0d4-3dc3-4b0b-8109-016e89d51ff2" />
@@ -19,9 +20,11 @@
 ## 特性
 
 - **3D 可视化** - 基于 Three.js 的专业级 3D 场景，支持物理模拟、粒子系统、矢量可视化
+- **SVG 增强** - 支持 SVG 2D 图表、函数图像、流程图覆盖在 3D 场景上
+- **混合渲染** - 自动识别主题特征，选择最佳渲染方案（纯 3D / 纯 SVG / 混合模式）
 - **自动学科识别** - 智能识别主题领域（物理/化学/生物/数学/天文/编程），自动切换配色主题
 - **玻璃拟态 UI** - 现代化的赛博教育风格，优雅的半透明界面
-- **实时交互** - 滑块实时控制参数，3D 场景即时响应
+- **实时交互** - 滑块实时控制参数，3D 场景和 SVG 图表即时响应
 - **公式渲染** - 内置 KaTeX 支持，完美渲染数学公式
 - **响应式设计** - 支持桌面端和移动端触控操作
 - **零依赖** - 单 HTML 文件，无需构建工具，直接浏览器打开即可运行
